@@ -1,7 +1,7 @@
 // PWAのService Worker登録
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('/prompt-memo-app/sw.js')
             .then(registration => {
                 console.log('ServiceWorker registered');
             })
@@ -24,7 +24,11 @@ const elements = {
     promptContent: document.getElementById('promptContent'),
     copyButton: document.getElementById('copyButton'),
     saveButton: document.getElementById('saveButton'),
-    promptList: document.getElementById('promptList')
+    promptList: document.getElementById('promptList'),
+    folderEditModal: document.getElementById('folderEditModal'),
+    editFolderName: document.getElementById('editFolderName'),
+    saveFolderEdit: document.getElementById('saveFolderEdit'),
+    cancelFolderEdit: document.getElementById('cancelFolderEdit')
 };
 
 // データ管理
@@ -32,6 +36,7 @@ class DataManager {
     constructor() {
         this.data = this.loadData();
         this.currentFolder = null;
+        this.editingFolder = null;
     }
 
     // データの読み込み
@@ -50,6 +55,40 @@ class DataManager {
         if (!this.data.folders.includes(name)) {
             this.data.folders.push(name);
             this.data.prompts[name] = [];
+            this.saveData();
+            return true;
+        }
+        return false;
+    }
+
+    // フォルダの編集
+    editFolder(oldName, newName) {
+        if (oldName === newName) return true;
+        if (this.data.folders.includes(newName)) return false;
+
+        const index = this.data.folders.indexOf(oldName);
+        if (index !== -1) {
+            this.data.folders[index] = newName;
+            this.data.prompts[newName] = this.data.prompts[oldName];
+            delete this.data.prompts[oldName];
+            if (this.currentFolder === oldName) {
+                this.currentFolder = newName;
+            }
+            this.saveData();
+            return true;
+        }
+        return false;
+    }
+
+    // フォルダの削除
+    deleteFolder(name) {
+        const index = this.data.folders.indexOf(name);
+        if (index !== -1) {
+            this.data.folders.splice(index, 1);
+            delete this.data.prompts[name];
+            if (this.currentFolder === name) {
+                this.currentFolder = null;
+            }
             this.saveData();
             return true;
         }
@@ -115,10 +154,30 @@ class UIManager {
                 if (this.dataManager.addFolder(name)) {
                     this.renderFolders();
                     elements.newFolderName.value = '';
+                    this.showToast('フォルダを作成しました');
                 } else {
                     this.showToast('同名のフォルダが既に存在します');
                 }
             }
+        });
+
+        // フォルダ編集モーダルの制御
+        elements.saveFolderEdit.addEventListener('click', () => {
+            const newName = elements.editFolderName.value.trim();
+            if (newName) {
+                if (this.dataManager.editFolder(this.dataManager.editingFolder, newName)) {
+                    this.renderFolders();
+                    this.updateCurrentFolderDisplay();
+                    elements.folderEditModal.classList.add('hidden');
+                    this.showToast('フォルダ名を変更しました');
+                } else {
+                    this.showToast('同名のフォルダが既に存在します');
+                }
+            }
+        });
+
+        elements.cancelFolderEdit.addEventListener('click', () => {
+            elements.folderEditModal.classList.add('hidden');
         });
 
         // プロンプトの保存
@@ -159,11 +218,48 @@ class UIManager {
     renderFolders() {
         elements.folderList.innerHTML = this.dataManager.data.folders
             .map(folder => `
-                <div class="p-2 border-b cursor-pointer hover:bg-gray-100" 
-                     onclick="app.selectFolder('${folder}')">
-                    ${folder}
+                <div class="flex justify-between items-center p-2 border-b">
+                    <div class="flex-grow cursor-pointer hover:bg-gray-100 p-2"
+                         onclick="app.selectFolder('${folder}')">
+                        ${folder}
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="app.showFolderEditModal('${folder}')"
+                                class="text-blue-500">
+                            編集
+                        </button>
+                        <button onclick="app.deleteFolder('${folder}')"
+                                class="text-red-500">
+                            削除
+                        </button>
+                    </div>
                 </div>
             `).join('');
+    }
+
+    // フォルダ編集モーダルの表示
+    showFolderEditModal(folderName) {
+        this.dataManager.editingFolder = folderName;
+        elements.editFolderName.value = folderName;
+        elements.folderEditModal.classList.remove('hidden');
+    }
+
+    // フォルダの削除
+    deleteFolder(name) {
+        if (confirm(`フォルダ「${name}」を削除してもよろしいですか？\n中のプロンプトも全て削除されます。`)) {
+            if (this.dataManager.deleteFolder(name)) {
+                this.renderFolders();
+                this.updateCurrentFolderDisplay();
+                this.renderPrompts();
+                this.showToast('フォルダを削除しました');
+            }
+        }
+    }
+
+    // 現在のフォルダ表示の更新
+    updateCurrentFolderDisplay() {
+        elements.currentFolder.textContent = 
+            this.dataManager.currentFolder || '未選択';
     }
 
     // プロンプト一覧の表示
@@ -182,7 +278,7 @@ class UIManager {
                         <button onclick="app.deletePrompt('${prompt.id}')" 
                                 class="text-red-500">削除</button>
                     </div>
-                    <p class="mt-2 text-gray-600">${prompt.content}</p>
+                    <p class="mt-2 text-gray-600 whitespace-pre-wrap">${prompt.content}</p>
                     <button onclick="app.copyPromptToClipboard('${prompt.id}')" 
                             class="mt-2 text-blue-500">
                         コピー
@@ -194,7 +290,7 @@ class UIManager {
     // フォルダの選択
     selectFolder(name) {
         this.dataManager.selectFolder(name);
-        elements.currentFolder.textContent = name;
+        this.updateCurrentFolderDisplay();
         elements.folderView.classList.add('hidden');
         this.renderPrompts();
     }
@@ -225,12 +321,12 @@ class UIManager {
         const toast = document.createElement('div');
         toast.className = 
             'fixed bottom-4 left-1/2 transform -translate-x-1/2 ' +
-            'bg-gray-800 text-white px-4 py-2 rounded-lg';
+            'bg-gray-800 text-white px-4 py-2 rounded-lg z-50';
         toast.textContent = message;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
     }
 }
 
-// Service Workerファイルの作成も必要です
+// アプリケーションの初期化
 const app = new UIManager(new DataManager());
