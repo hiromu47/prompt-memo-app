@@ -1,10 +1,10 @@
 const CACHE_NAME = 'prompt-dictionary-v1';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/script.js',
-    '/icons/icon-192x192.svg',
-    '/icons/icon-512x512.svg'
+    '/prompt-memo-app/',
+    '/prompt-memo-app/index.html',
+    '/prompt-memo-app/script.js',
+    '/prompt-memo-app/icons/icon-192x192.svg',
+    '/prompt-memo-app/icons/icon-512x512.svg'
 ];
 
 // インストール時にキャッシュ
