@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Dictionary</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
+    <meta name="theme-color" content="#ffffff">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .safe-area {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 safe-area">
+    <!-- フォルダビュー（デフォルトで非表示） -->
+    <div id="folderView" class="fixed inset-0 bg-white z-10 hidden">
+        <div class="h-full flex flex-col">
+            <!-- フォルダビューヘッダー -->
+            <div class="p-4 border-b">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">フォルダ</h2>
+                    <button id="closeFolderView" class="text-gray-500">&times;</button>
+                </div>
+                <div class="mt-4">
+                    <input type="text" id="newFolderName" 
+                           placeholder="新規フォルダ名" 
+                           class="w-full p-2 border rounded">
+                    <button id="addFolder" 
+                            class="w-full mt-2 bg-blue-500 text-white p-2 rounded">
+                        作成
+                    </button>
+                </div>
+            </div>
+            <!-- フォルダリスト -->
+            <div id="folderList" class="flex-1 overflow-auto p-4">
+                <!-- フォルダがここに動的に追加される -->
+            </div>
+        </div>
+    </div>
+
+    <!-- メインビュー -->
+    <div class="max-w-md mx-auto p-4">
+        <header class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Prompt Dictionary</h1>
+            <button id="showFolders" class="text-blue-500">
+                フォルダ
+            </button>
+        </header>
+
+        <!-- 現在のフォルダ表示 -->
+        <div id="currentFolder" class="mb-4 text-gray-600">
+            フォルダ: <span id="folderName">未選択</span>
+        </div>
+
+        <!-- プロンプト入力フォーム -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+            <input type="text" id="promptTitle" 
+                   placeholder="タイトル" 
+                   class="w-full p-2 border rounded mb-2">
+            <textarea id="promptContent" 
+                      placeholder="プロンプト内容" 
+                      class="w-full p-2 border rounded mb-2" 
+                      rows="6"></textarea>
+            <div class="flex justify-end gap-2">
+                <button id="copyButton" 
+                        class="bg-blue-500 text-white px-4 py-2 rounded">
+                    コピー
+                </button>
+                <button id="saveButton" 
+                        class="bg-green-500 text-white px-4 py-2 rounded">
+                    保存
+                </button>
+            </div>
+        </div>
+
+        <!-- プロンプト一覧 -->
+        <div id="promptList" class="space-y-4">
+            <!-- プロンプトがここに動的に追加される -->
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
