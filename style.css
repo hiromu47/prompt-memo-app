@@ -1,28 +1,68 @@
-/* 追加: 選択中のフォルダボタン */
-.folderBtn {
-    padding: 10px;
-    margin: 5px;
-    background-color: #ddd;
+/* 基本デザイン */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+}
+
+button {
+    padding: 10px 15px;
+    margin-left: 10px;
+    background-color: #2196F3;
+    color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
 }
 
-.folderBtn.selected {
-    background-color: #4CAF50;
-    color: white;
+button:hover {
+    background-color: #0b7dda;
 }
 
-.folderDeleteBtn {
+#folderList, #memoList {
+    padding: 20px;
+}
+
+.folder {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e0e0e0;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.memo {
+    background-color: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.memo-heading {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.action-btn {
     margin-left: 5px;
-    background-color: #f44336;
+    background-color: #FF5722;
     border: none;
     color: white;
     padding: 5px 10px;
     border-radius: 3px;
     cursor: pointer;
-}
-
-.folderDeleteBtn:hover {
-    background-color: #d32f2f;
 }
