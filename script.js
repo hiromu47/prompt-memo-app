@@ -28,7 +28,11 @@ const elements = {
     folderEditModal: document.getElementById('folderEditModal'),
     editFolderName: document.getElementById('editFolderName'),
     saveFolderEdit: document.getElementById('saveFolderEdit'),
-    cancelFolderEdit: document.getElementById('cancelFolderEdit')
+    cancelFolderEdit: document.getElementById('cancelFolderEdit'),
+    promptTitleEditModal: document.getElementById('promptTitleEditModal'),
+    editPromptTitle: document.getElementById('editPromptTitle'),
+    savePromptTitleEdit: document.getElementById('savePromptTitleEdit'),
+    cancelPromptTitleEdit: document.getElementById('cancelPromptTitleEdit')
 };
 
 // データ管理
@@ -37,6 +41,7 @@ class DataManager {
         this.data = this.loadData();
         this.currentFolder = null;
         this.editingFolder = null;
+        this.editingPromptId = null;
     }
 
     // データの読み込み
@@ -48,6 +53,12 @@ class DataManager {
     // データの保存
     saveData() {
         localStorage.setItem('promptDictionary', JSON.stringify(this.data));
+    }
+
+    // フォルダの並び順を更新
+    reorderFolders(newOrder) {
+        this.data.folders = newOrder;
+        this.saveData();
     }
 
     // フォルダの追加
@@ -111,6 +122,21 @@ class DataManager {
         return true;
     }
 
+    // プロンプトのタイトル編集
+    editPromptTitle(promptId, newTitle) {
+        if (!this.currentFolder) return false;
+
+        const prompt = this.data.prompts[this.currentFolder]
+            .find(p => p.id === promptId);
+        
+        if (prompt) {
+            prompt.title = newTitle;
+            this.saveData();
+            return true;
+        }
+        return false;
+    }
+
     // プロンプトの削除
     deletePrompt(id) {
         if (!this.currentFolder) return false;
@@ -133,12 +159,26 @@ class UIManager {
     constructor(dataManager) {
         this.dataManager = dataManager;
         this.setupEventListeners();
+        this.setupSortable();
         this.renderFolders();
+    }
+
+    // Sortableの設定
+    setupSortable() {
+        new Sortable(elements.folderList, {
+            animation: 150,
+            handle: '.folder-drag-handle',
+            onEnd: (evt) => {
+                const folders = Array.from(elements.folderList.children)
+                    .map(el => el.getAttribute('data-folder'));
+                this.dataManager.reorderFolders(folders);
+            }
+        });
     }
 
     // イベントリスナーの設定
     setupEventListeners() {
-        // フォルダビューの表示/非表示
+        // 既存のイベントリスナー
         elements.showFolders.addEventListener('click', () => {
             elements.folderView.classList.remove('hidden');
         });
@@ -147,7 +187,6 @@ class UIManager {
             elements.folderView.classList.add('hidden');
         });
 
-        // フォルダの追加
         elements.addFolder.addEventListener('click', () => {
             const name = elements.newFolderName.value.trim();
             if (name) {
@@ -180,6 +219,22 @@ class UIManager {
             elements.folderEditModal.classList.add('hidden');
         });
 
+        // プロンプトタイトル編集モーダルの制御
+        elements.savePromptTitleEdit.addEventListener('click', () => {
+            const newTitle = elements.editPromptTitle.value.trim();
+            if (newTitle) {
+                if (this.dataManager.editPromptTitle(this.dataManager.editingPromptId, newTitle)) {
+                    this.renderPrompts();
+                    elements.promptTitleEditModal.classList.add('hidden');
+                    this.showToast('タイトルを変更しました');
+                }
+            }
+        });
+
+        elements.cancelPromptTitleEdit.addEventListener('click', () => {
+            elements.promptTitleEditModal.classList.add('hidden');
+        });
+
         // プロンプトの保存
         elements.saveButton.addEventListener('click', () => {
             if (!this.dataManager.currentFolder) {
@@ -203,7 +258,7 @@ class UIManager {
             }
         });
 
-        // プロンプトのコピー
+        // コピーボタン
         elements.copyButton.addEventListener('click', () => {
             const content = elements.promptContent.value.trim();
             if (content) {
@@ -218,10 +273,10 @@ class UIManager {
     renderFolders() {
         elements.folderList.innerHTML = this.dataManager.data.folders
             .map(folder => `
-                <div class="flex justify-between items-center p-2 border-b">
-                    <div class="flex-grow cursor-pointer hover:bg-gray-100 p-2"
-                         onclick="app.selectFolder('${folder}')">
-                        ${folder}
+                <div class="folder-item flex justify-between items-center p-2 border-b" 
+                     data-folder="${folder}">
+                    <div class="folder-drag-handle flex items-center flex-grow cursor-move px-2">
+                        ⋮⋮ ${folder}
                     </div>
                     <div class="flex gap-2">
                         <button onclick="app.showFolderEditModal('${folder}')"
@@ -237,11 +292,46 @@ class UIManager {
             `).join('');
     }
 
+    // プロンプト一覧の表示
+    renderPrompts() {
+        if (!this.dataManager.currentFolder) {
+            elements.promptList.innerHTML = '';
+            return;
+        }
+
+        const prompts = this.dataManager.data.prompts[this.dataManager.currentFolder];
+        elements.promptList.innerHTML = prompts
+            .map(prompt => `
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-bold cursor-pointer hover:text-blue-500"
+                            onclick="app.showPromptTitleEditModal('${prompt.id}', '${prompt.title}')">
+                            ${prompt.title}
+                        </h3>
+                        <button onclick="app.deletePrompt('${prompt.id}')" 
+                                class="text-red-500">削除</button>
+                    </div>
+                    <p class="mt-2 text-gray-600 whitespace-pre-wrap">${prompt.content}</p>
+                    <button onclick="app.copyPromptToClipboard('${prompt.id}')" 
+                            class="mt-2 text-blue-500">
+                        コピー
+                    </button>
+                </div>
+            `).join('');
+    }
+
     // フォルダ編集モーダルの表示
     showFolderEditModal(folderName) {
         this.dataManager.editingFolder = folderName;
         elements.editFolderName.value = folderName;
         elements.folderEditModal.classList.remove('hidden');
+    }
+
+    // プロンプトタイトル編集モーダルの表示
+    showPromptTitleEditModal(promptId, currentTitle) {
+        this.dataManager.editingPromptId = promptId;
+        elements.editPromptTitle.value = currentTitle;
+        elements.promptTitleEditModal.classList.remove('hidden');
     }
 
     // フォルダの削除
@@ -256,43 +346,18 @@ class UIManager {
         }
     }
 
-    // 現在のフォルダ表示の更新
-    updateCurrentFolderDisplay() {
-        elements.currentFolder.textContent = 
-            this.dataManager.currentFolder || '未選択';
-    }
-
-    // プロンプト一覧の表示
-    renderPrompts() {
-        if (!this.dataManager.currentFolder) {
-            elements.promptList.innerHTML = '';
-            return;
-        }
-
-        const prompts = this.dataManager.data.prompts[this.dataManager.currentFolder];
-        elements.promptList.innerHTML = prompts
-            .map(prompt => `
-                <div class="bg-white rounded-lg shadow-md p-4">
-                    <div class="flex justify-between items-start">
-                        <h3 class="font-bold">${prompt.title}</h3>
-                        <button onclick="app.deletePrompt('${prompt.id}')" 
-                                class="text-red-500">削除</button>
-                    </div>
-                    <p class="mt-2 text-gray-600 whitespace-pre-wrap">${prompt.content}</p>
-                    <button onclick="app.copyPromptToClipboard('${prompt.id}')" 
-                            class="mt-2 text-blue-500">
-                        コピー
-                    </button>
-                </div>
-            `).join('');
-    }
-
     // フォルダの選択
     selectFolder(name) {
         this.dataManager.selectFolder(name);
         this.updateCurrentFolderDisplay();
         elements.folderView.classList.add('hidden');
         this.renderPrompts();
+    }
+
+    // 現在のフォルダ表示の更新
+    updateCurrentFolderDisplay() {
+        elements.currentFolder.textContent = 
+            this.dataManager.currentFolder || '未選択';
     }
 
     // プロンプトの削除
