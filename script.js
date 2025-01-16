@@ -1,4 +1,4 @@
-// PWAのService Worker登録
+// Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/prompt-memo-app/sw.js')
@@ -39,7 +39,6 @@ const elements = {
     cancelPromptTitleEdit: getElement('cancelPromptTitleEdit')
 };
 
-// データ管理クラス
 class DataManager {
     constructor() {
         this.data = this.loadData();
@@ -68,14 +67,9 @@ class DataManager {
         }
     }
 
-    validateFolderName(name) {
-        return name && name.trim().length > 0 && name.trim().length <= 30;
-    }
-
     addFolder(name) {
         name = name.trim();
-        if (!this.validateFolderName(name)) return false;
-        if (this.data.folders.includes(name)) return false;
+        if (!name || this.data.folders.includes(name)) return false;
         
         this.data.folders.push(name);
         this.data.prompts[name] = [];
@@ -85,8 +79,7 @@ class DataManager {
     editFolder(oldName, newName) {
         newName = newName.trim();
         if (oldName === newName) return true;
-        if (!this.validateFolderName(newName)) return false;
-        if (this.data.folders.includes(newName)) return false;
+        if (!newName || this.data.folders.includes(newName)) return false;
 
         const index = this.data.folders.indexOf(oldName);
         if (index === -1) return false;
@@ -103,7 +96,6 @@ class DataManager {
     }
 
     reorderFolders(newOrder) {
-        // 順序の整合性チェック
         if (newOrder.length !== this.data.folders.length) return false;
         if (!newOrder.every(folder => this.data.folders.includes(folder))) return false;
 
@@ -175,7 +167,6 @@ class DataManager {
     }
 }
 
-// UI管理クラス
 class UIManager {
     constructor(dataManager) {
         this.dataManager = dataManager;
@@ -199,16 +190,21 @@ class UIManager {
     }
 
     setupEventListeners() {
-        // フォルダビューの表示/非表示
         elements.showFolders.addEventListener('click', () => {
             elements.folderView.classList.remove('hidden');
+            this.renderFolders();
         });
 
         elements.closeFolderView.addEventListener('click', () => {
             elements.folderView.classList.add('hidden');
         });
 
-        // フォルダの追加
+        elements.newFolderName.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                elements.addFolder.click();
+            }
+        });
+
         elements.addFolder.addEventListener('click', () => {
             const name = elements.newFolderName.value.trim();
             if (!name) {
@@ -225,7 +221,6 @@ class UIManager {
             }
         });
 
-        // フォルダの選択
         elements.saveToFolder.addEventListener('change', (e) => {
             const selectedFolder = e.target.value;
             if (selectedFolder) {
@@ -235,7 +230,6 @@ class UIManager {
             }
         });
 
-        // プロンプトの保存
         elements.saveButton.addEventListener('click', () => {
             const folder = elements.saveToFolder.value;
             if (!folder) {
@@ -263,7 +257,6 @@ class UIManager {
             }
         });
 
-        // フォルダ編集モーダルの制御
         elements.saveFolderEdit.addEventListener('click', () => {
             const newName = elements.editFolderName.value.trim();
             if (!newName) return;
@@ -281,7 +274,6 @@ class UIManager {
             elements.folderEditModal.classList.add('hidden');
         });
 
-        // プロンプトタイトル編集モーダルの制御
         elements.savePromptTitleEdit.addEventListener('click', () => {
             const newTitle = elements.editPromptTitle.value.trim();
             if (!newTitle) return;
@@ -301,7 +293,6 @@ class UIManager {
             elements.promptTitleEditModal.classList.add('hidden');
         });
 
-        // コピーボタン
         elements.copyButton.addEventListener('click', () => {
             const content = elements.promptContent.value.trim();
             if (!content) return;
@@ -327,7 +318,7 @@ class UIManager {
                     <div class="flex items-center justify-between">
                         <div class="flex items-center flex-grow">
                             <span class="folder-handle mr-2 text-gray-400 cursor-move">⋮⋮</span>
-                            <button class="flex-grow text-left" 
+                            <button class="flex-grow text-left py-2" 
                                     onclick="app.handleFolderClick('${this.escapeHtml(folder)}')">
                                 ${this.escapeHtml(folder)}
                             </button>
@@ -399,5 +390,21 @@ class UIManager {
             `フォルダ: ${this.dataManager.currentFolder || '未選択'}`;
     }
 
-    // Event Handlers
     handleFolderClick(folder) {
+        if (this.dataManager.selectFolder(folder)) {
+            this.updateCurrentFolderDisplay();
+            this.renderPrompts();
+            elements.folderView.classList.add('hidden');
+            elements.saveToFolder.value = folder;
+        }
+    }
+
+    handleFolderEdit(folder) {
+        this.dataManager.editingFolder = folder;
+        elements.editFolderName.value = folder;
+        elements.folderEditModal.classList.remove('hidden');
+    }
+
+    handleFolderDelete(folder) {
+        if (!confirm(`フォルダ「${folder}」を削除してもよろしいですか？\n中のプロンプトも全て削除されます。`)) {
+            return;
