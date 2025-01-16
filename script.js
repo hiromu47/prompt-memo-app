@@ -2,173 +2,129 @@
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/prompt-memo-app/sw.js')
-            .then(registration => {
-                console.log('ServiceWorker registered');
-            })
-            .catch(error => {
-                console.log('ServiceWorker registration failed:', error);
-            });
+            .then(registration => console.log('ServiceWorker registered'))
+            .catch(error => console.error('ServiceWorker registration failed:', error));
     });
 }
 
-// DOM要素の取得
-const elements = {
-    folderView: document.getElementById('folderView'),
-    showFolders: document.getElementById('showFolders'),
-    closeFolderView: document.getElementById('closeFolderView'),
-    newFolderName: document.getElementById('newFolderName'),
-    addFolder: document.getElementById('addFolder'),
-    folderList: document.getElementById('folderList'),
-    currentFolder: document.getElementById('folderName'),
-    promptTitle: document.getElementById('promptTitle'),
-    promptContent: document.getElementById('promptContent'),
-    copyButton: document.getElementById('copyButton'),
-    saveButton: document.getElementById('saveButton'),
-    promptList: document.getElementById('promptList'),
-    folderEditModal: document.getElementById('folderEditModal'),
-    editFolderName: document.getElementById('editFolderName'),
-    saveFolderEdit: document.getElementById('saveFolderEdit'),
-    cancelFolderEdit: document.getElementById('cancelFolderEdit'),
-    promptTitleEditModal: document.getElementById('promptTitleEditModal'),
-    editPromptTitle: document.getElementById('editPromptTitle'),
-    savePromptTitleEdit: document.getElementById('savePromptTitleEdit'),
-    cancelPromptTitleEdit: document.getElementById('cancelPromptTitleEdit')
+// DOM要素の取得と存在確認
+const getElement = (id) => {
+    const element = document.getElementById(id);
+    if (!element) throw new Error(`Element with id "${id}" not found`);
+    return element;
 };
 
-// データ管理
+// DOM要素
+const elements = {
+    folderView: getElement('folderView'),
+    showFolders: getElement('showFolders'),
+    closeFolderView: getElement('closeFolderView'),
+    newFolderName: getElement('newFolderName'),
+    addFolder: getElement('addFolder'),
+    folderList: getElement('folderList'),
+    currentFolder: getElement('folderName'),
+    promptTitle: getElement('promptTitle'),
+    promptContent: getElement('promptContent'),
+    copyButton: getElement('copyButton'),
+    saveButton: getElement('saveButton'),
+    promptList: getElement('promptList')
+};
+
+// データ管理クラス
 class DataManager {
     constructor() {
         this.data = this.loadData();
         this.currentFolder = null;
-        this.editingFolder = null;
-        this.editingPromptId = null;
     }
 
     loadData() {
-        const saved = localStorage.getItem('promptDictionary');
-        return saved ? JSON.parse(saved) : { folders: [], prompts: {} };
+        try {
+            const saved = localStorage.getItem('promptDictionary');
+            return saved ? JSON.parse(saved) : { folders: [], prompts: {} };
+        } catch (error) {
+            console.error('Error loading data:', error);
+            return { folders: [], prompts: {} };
+        }
     }
 
     saveData() {
-        localStorage.setItem('promptDictionary', JSON.stringify(this.data));
-    }
-
-    reorderFolders(newOrder) {
-        this.data.folders = newOrder;
-        this.saveData();
+        try {
+            localStorage.setItem('promptDictionary', JSON.stringify(this.data));
+            return true;
+        } catch (error) {
+            console.error('Error saving data:', error);
+            return false;
+        }
     }
 
     addFolder(name) {
-        if (!this.data.folders.includes(name)) {
-            this.data.folders.push(name);
-            this.data.prompts[name] = [];
-            this.saveData();
-            return true;
-        }
-        return false;
-    }
-
-    editFolder(oldName, newName) {
-        if (oldName === newName) return true;
-        if (this.data.folders.includes(newName)) return false;
-
-        const index = this.data.folders.indexOf(oldName);
-        if (index !== -1) {
-            this.data.folders[index] = newName;
-            this.data.prompts[newName] = this.data.prompts[oldName];
-            delete this.data.prompts[oldName];
-            if (this.currentFolder === oldName) {
-                this.currentFolder = newName;
-            }
-            this.saveData();
-            return true;
-        }
-        return false;
+        if (!name || this.data.folders.includes(name)) return false;
+        
+        this.data.folders.push(name);
+        this.data.prompts[name] = [];
+        return this.saveData();
     }
 
     deleteFolder(name) {
         const index = this.data.folders.indexOf(name);
-        if (index !== -1) {
-            this.data.folders.splice(index, 1);
-            delete this.data.prompts[name];
-            if (this.currentFolder === name) {
-                this.currentFolder = null;
-            }
-            this.saveData();
-            return true;
+        if (index === -1) return false;
+
+        this.data.folders.splice(index, 1);
+        delete this.data.prompts[name];
+        
+        if (this.currentFolder === name) {
+            this.currentFolder = null;
         }
-        return false;
+        
+        return this.saveData();
+    }
+
+    selectFolder(name) {
+        if (!this.data.folders.includes(name)) return false;
+        this.currentFolder = name;
+        return true;
     }
 
     savePrompt(title, content) {
-        if (!this.currentFolder) return false;
+        if (!this.currentFolder || !title || !content) return false;
 
         const prompt = {
             id: Date.now().toString(),
-            title: title,
-            content: content,
+            title: title.trim(),
+            content: content.trim(),
             created: new Date().toISOString()
         };
 
         this.data.prompts[this.currentFolder].unshift(prompt);
-        this.saveData();
-        return true;
-    }
-
-    editPromptTitle(promptId, newTitle) {
-        if (!this.currentFolder) return false;
-
-        const prompt = this.data.prompts[this.currentFolder]
-            .find(p => p.id === promptId);
-        
-        if (prompt) {
-            prompt.title = newTitle;
-            this.saveData();
-            return true;
-        }
-        return false;
+        return this.saveData();
     }
 
     deletePrompt(id) {
         if (!this.currentFolder) return false;
 
-        this.data.prompts[this.currentFolder] = 
-            this.data.prompts[this.currentFolder].filter(p => p.id !== id);
-        this.saveData();
-        return true;
+        const prompts = this.data.prompts[this.currentFolder];
+        const index = prompts.findIndex(p => p.id === id);
+        if (index === -1) return false;
+
+        prompts.splice(index, 1);
+        return this.saveData();
     }
 
-    selectFolder(name) {
-        if (this.data.folders.includes(name)) {
-            this.currentFolder = name;
-            return this.data.prompts[name] || [];
-        }
-        return [];
+    getCurrentFolderPrompts() {
+        return this.currentFolder ? this.data.prompts[this.currentFolder] : [];
     }
 }
 
-// UI管理
+// UI管理クラス
 class UIManager {
     constructor(dataManager) {
         this.dataManager = dataManager;
         this.setupEventListeners();
-        this.setupSortable();
-        this.renderFolders();
-    }
-
-    setupSortable() {
-        new Sortable(elements.folderList, {
-            animation: 150,
-            handle: '.folder-handle',
-            onEnd: (evt) => {
-                const folders = Array.from(elements.folderList.children)
-                    .map(el => el.getAttribute('data-folder'));
-                this.dataManager.reorderFolders(folders);
-            }
-        });
+        this.renderAll();
     }
 
     setupEventListeners() {
+        // フォルダビューの表示/非表示
         elements.showFolders.addEventListener('click', () => {
             elements.folderView.classList.remove('hidden');
         });
@@ -177,19 +133,24 @@ class UIManager {
             elements.folderView.classList.add('hidden');
         });
 
+        // フォルダの追加
         elements.addFolder.addEventListener('click', () => {
             const name = elements.newFolderName.value.trim();
-            if (name) {
-                if (this.dataManager.addFolder(name)) {
-                    this.renderFolders();
-                    elements.newFolderName.value = '';
-                    this.showToast('フォルダを作成しました');
-                } else {
-                    this.showToast('同名のフォルダが既に存在します');
-                }
+            if (!name) {
+                this.showToast('フォルダ名を入力してください');
+                return;
+            }
+
+            if (this.dataManager.addFolder(name)) {
+                elements.newFolderName.value = '';
+                this.renderFolders();
+                this.showToast('フォルダを作成しました');
+            } else {
+                this.showToast('同名のフォルダが既に存在します');
             }
         });
 
+        // プロンプトの保存
         elements.saveButton.addEventListener('click', () => {
             if (!this.dataManager.currentFolder) {
                 this.showToast('フォルダを選択してください');
@@ -205,136 +166,76 @@ class UIManager {
             }
 
             if (this.dataManager.savePrompt(title, content)) {
-                this.renderPrompts();
                 elements.promptTitle.value = '';
                 elements.promptContent.value = '';
+                this.renderPrompts();
                 this.showToast('保存しました');
+            } else {
+                this.showToast('保存に失敗しました');
             }
         });
 
-        elements.saveFolderEdit.addEventListener('click', () => {
-            const newName = elements.editFolderName.value.trim();
-            if (newName) {
-                if (this.dataManager.editFolder(this.dataManager.editingFolder, newName)) {
-                    this.renderFolders();
-                    this.updateCurrentFolderDisplay();
-                    elements.folderEditModal.classList.add('hidden');
-                    this.showToast('フォルダ名を変更しました');
-                } else {
-                    this.showToast('同名のフォルダが既に存在します');
-                }
-            }
-        });
-
-        elements.cancelFolderEdit.addEventListener('click', () => {
-            elements.folderEditModal.classList.add('hidden');
-        });
-
-        elements.savePromptTitleEdit.addEventListener('click', () => {
-            const newTitle = elements.editPromptTitle.value.trim();
-            if (newTitle) {
-                if (this.dataManager.editPromptTitle(this.dataManager.editingPromptId, newTitle)) {
-                    this.renderPrompts();
-                    elements.promptTitleEditModal.classList.add('hidden');
-                    this.showToast('タイトルを変更しました');
-                }
-            }
-        });
-
-        elements.cancelPromptTitleEdit.addEventListener('click', () => {
-            elements.promptTitleEditModal.classList.add('hidden');
-        });
-
+        // コピーボタン
         elements.copyButton.addEventListener('click', () => {
             const content = elements.promptContent.value.trim();
-            if (content) {
-                navigator.clipboard.writeText(content)
-                    .then(() => this.showToast('コピーしました'))
-                    .catch(() => this.showToast('コピーに失敗しました'));
-            }
+            if (!content) return;
+
+            navigator.clipboard.writeText(content)
+                .then(() => this.showToast('コピーしました'))
+                .catch(() => this.showToast('コピーに失敗しました'));
         });
     }
 
+    renderAll() {
+        this.renderFolders();
+        this.updateCurrentFolderDisplay();
+        this.renderPrompts();
+    }
+
     renderFolders() {
-        elements.folderList.innerHTML = this.dataManager.data.folders
+        const folders = this.dataManager.data.folders;
+        elements.folderList.innerHTML = folders.length ? folders
             .map(folder => `
-                <div class="folder-item flex items-center justify-between p-4 border-b bg-white" 
-                     data-folder="${folder}">
-                    <div class="flex items-center flex-grow">
-                        <span class="folder-handle mr-2 text-gray-400">⋮⋮</span>
-                        <button class="text-left flex-grow" onclick="app.selectFolder('${folder.replace(/'/g, "\\'")}'">
-                            ${folder}
+                <div class="folder-item p-4 border-b bg-white" data-folder="${folder}">
+                    <div class="flex items-center justify-between">
+                        <button class="flex-grow text-left py-2" 
+                                onclick="app.handleFolderClick('${folder}')">
+                            ${this.escapeHtml(folder)}
                         </button>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="app.showFolderEditModal('${folder.replace(/'/g, "\\'")}')"
-                                class="text-blue-500">
-                            編集
-                        </button>
-                        <button onclick="app.deleteFolder('${folder.replace(/'/g, "\\'")}')"
-                                class="text-red-500">
+                        <button class="text-red-500 px-4 py-2" 
+                                onclick="app.handleFolderDelete('${folder}')">
                             削除
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `).join('') : '<div class="p-4 text-gray-500">フォルダがありません</div>';
     }
 
     renderPrompts() {
-        if (!this.dataManager.currentFolder) {
-            elements.promptList.innerHTML = '';
-            return;
-        }
-
-        const prompts = this.dataManager.data.prompts[this.dataManager.currentFolder];
-        elements.promptList.innerHTML = prompts
+        const prompts = this.dataManager.getCurrentFolderPrompts();
+        elements.promptList.innerHTML = prompts.length ? prompts
             .map(prompt => `
                 <div class="bg-white rounded-lg shadow-md p-4">
-                    <div class="flex justify-between items-start">
-                        <h3 class="font-bold cursor-pointer hover:text-blue-500"
-                            onclick="app.showPromptTitleEditModal('${prompt.id}', '${prompt.title}')">
-                            ${prompt.title}
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold flex-grow">
+                            ${this.escapeHtml(prompt.title)}
                         </h3>
-                        <button onclick="app.deletePrompt('${prompt.id}')" 
-                                class="text-red-500">削除</button>
+                        <button class="text-red-500 ml-2" 
+                                onclick="app.handlePromptDelete('${prompt.id}')">
+                            削除
+                        </button>
                     </div>
-                    <p class="mt-2 text-gray-600 whitespace-pre-wrap">${prompt.content}</p>
-                    <button onclick="app.copyPromptToClipboard('${prompt.id}')" 
-                            class="mt-2 text-blue-500">
+                    <p class="text-gray-600 whitespace-pre-wrap mb-2">
+                        ${this.escapeHtml(prompt.content)}
+                    </p>
+                    <button class="text-blue-500" 
+                            onclick="app.handlePromptCopy('${prompt.id}')">
                         コピー
                     </button>
                 </div>
-            `).join('');
-    }
-
-    showFolderEditModal(folderName) {
-        this.dataManager.editingFolder = folderName;
-        elements.editFolderName.value = folderName;
-        elements.folderEditModal.classList.remove('hidden');
-    }
-
-    showPromptTitleEditModal(promptId, currentTitle) {
-        this.dataManager.editingPromptId = promptId;
-        elements.editPromptTitle.value = currentTitle;
-        elements.promptTitleEditModal.classList.remove('hidden');
-    }
-
-    deleteFolder(name) {
-        if (confirm(`フォルダ「${name}」を削除してもよろしいですか？\n中のプロンプトも全て削除されます。`)) {
-            if (this.dataManager.deleteFolder(name)) {
-                this.renderFolders();
-                this.updateCurrentFolderDisplay();
-                this.renderPrompts();
-                this.showToast('フォルダを削除しました');
-            }
-        }
-    }
-
-    selectFolder(name) {
-        this.dataManager.selectFolder(name);
-        this.updateCurrentFolderDisplay();
-        elements.folderView.classList.add('hidden');
-        this.renderPrompts();
+            `).join('') : this.dataManager.currentFolder ? 
+                '<div class="text-gray-500">プロンプトがありません</div>' : 
+                '<div class="text-gray-500">フォルダを選択してください</div>';
     }
 
     updateCurrentFolderDisplay() {
@@ -342,35 +243,67 @@ class UIManager {
             this.dataManager.currentFolder || '未選択';
     }
 
-    deletePrompt(id) {
-        if (confirm('このプロンプトを削除しますか？')) {
-            if (this.dataManager.deletePrompt(id)) {
-                this.renderPrompts();
-                this.showToast('削除しました');
-            }
+    // Event Handlers
+    handleFolderClick(folder) {
+        if (this.dataManager.selectFolder(folder)) {
+            this.updateCurrentFolderDisplay();
+            this.renderPrompts();
+            elements.folderView.classList.add('hidden');
         }
     }
 
-    copyPromptToClipboard(id) {
-        const prompts = this.dataManager.data.prompts[this.dataManager.currentFolder];
+    handleFolderDelete(folder) {
+        if (!confirm(`フォルダ「${folder}」を削除してもよろしいですか？\n中のプロンプトも全て削除されます。`)) {
+            return;
+        }
+
+        if (this.dataManager.deleteFolder(folder)) {
+            this.renderAll();
+            this.showToast('フォルダを削除しました');
+        }
+    }
+
+    handlePromptDelete(id) {
+        if (!confirm('このプロンプトを削除してもよろしいですか？')) {
+            return;
+        }
+
+        if (this.dataManager.deletePrompt(id)) {
+            this.renderPrompts();
+            this.showToast('削除しました');
+        }
+    }
+
+    handlePromptCopy(id) {
+        const prompts = this.dataManager.getCurrentFolderPrompts();
         const prompt = prompts.find(p => p.id === id);
-        if (prompt) {
-            navigator.clipboard.writeText(prompt.content)
-                .then(() => this.showToast('コピーしました'))
-                .catch(() => this.showToast('コピーに失敗しました'));
-        }
+        if (!prompt) return;
+
+        navigator.clipboard.writeText(prompt.content)
+            .then(() => this.showToast('コピーしました'))
+            .catch(() => this.showToast('コピーに失敗しました'));
     }
 
-    showToast(message) {
+    // Utility Methods
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    showToast(message, duration = 3000) {
         const toast = document.createElement('div');
         toast.className = 
             'fixed bottom-4 left-1/2 transform -translate-x-1/2 ' +
             'bg-gray-800 text-white px-4 py-2 rounded-lg z-50';
         toast.textContent = message;
+        
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        setTimeout(() => {
+            toast.remove();
+        }, duration);
     }
 }
 
-// アプリケーションの初期化
+// アプリケーションのインスタンス化
 const app = new UIManager(new DataManager());
