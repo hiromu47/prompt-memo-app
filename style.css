@@ -1,33 +1,4 @@
-/* 全体の配色とレイアウト */
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
-    padding: 0;
-}
-
-header {
-    background-color: #333;
-    color: white;
-    padding: 20px;
-    text-align: center;
-}
-
-button {
-    padding: 10px 20px;
-    background-color: #2196F3;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    margin-left: 10px;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #0b7dda;
-}
-
-/* フォルダとメモのデザイン */
+/* UIデザイン */
 .folder-item, .memo {
     display: flex;
     justify-content: space-between;
@@ -38,10 +9,15 @@ button:hover {
     border-radius: 5px;
 }
 
-.memo button, .folder-item button {
-    background-color: #2196F3;
-    border: none;
+button {
     padding: 5px 10px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
     border-radius: 5px;
     cursor: pointer;
+}
+
+button:hover {
+    background-color: #0b7dda;
 }
