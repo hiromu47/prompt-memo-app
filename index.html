@@ -8,10 +8,22 @@
     <link rel="apple-touch-icon" href="/prompt-memo-app/icons/icon-192x192.svg">
     <meta name="theme-color" content="#ffffff">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         .safe-area {
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
+        }
+        .sortable-ghost {
+            opacity: 0.5;
+            background-color: #eee;
+        }
+        .folder-item {
+            touch-action: none;
+        }
+        .folder-drag-handle {
+            cursor: move;
+            cursor: -webkit-grabbing;
         }
     </style>
 </head>
@@ -36,7 +48,7 @@
                 </div>
             </div>
             <!-- フォルダリスト -->
-            <div id="folderList" class="flex-1 overflow-auto p-4">
+            <div id="folderList" class="flex-1 overflow-auto">
                 <!-- フォルダが動的に追加される -->
             </div>
         </div>
@@ -95,6 +107,25 @@
                     キャンセル
                 </button>
                 <button id="saveFolderEdit" 
+                        class="px-4 py-2 bg-blue-500 text-white rounded">
+                    保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- プロンプトタイトル編集モーダル -->
+    <div id="promptTitleEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-20">
+        <div class="bg-white rounded-lg p-4 w-80">
+            <h3 class="text-lg font-bold mb-4">タイトルの編集</h3>
+            <input type="text" id="editPromptTitle" 
+                   class="w-full p-2 border rounded mb-4">
+            <div class="flex justify-end gap-2">
+                <button id="cancelPromptTitleEdit" 
+                        class="px-4 py-2 bg-gray-200 rounded">
+                    キャンセル
+                </button>
+                <button id="savePromptTitleEdit" 
                         class="px-4 py-2 bg-blue-500 text-white rounded">
                     保存
                 </button>
