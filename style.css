@@ -1,0 +1,68 @@
+/* 基本デザイン */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+}
+
+button {
+    padding: 10px;
+    margin-left: 10px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0b7dda;
+}
+
+#folderList, #memoList {
+    padding: 20px;
+}
+
+.memo {
+    background-color: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.copyBtn, .deleteBtn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #FF5722;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.copyBtn:hover {
+    background-color: #e64a19;
+}
+
+.deleteBtn {
+    right: 50px;
+    background-color: #f44336;
+}
+
+.deleteBtn:hover {
+    background-color: #d32f2f;
+}
