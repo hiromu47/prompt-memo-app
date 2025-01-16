@@ -12,20 +12,24 @@ let currentFolder = null;
 newFolderBtn.addEventListener("click", () => {
     const folderName = prompt("新しいフォルダ名を入力:");
     if (folderName && !folders[folderName]) {
-        folders[folderName] = [];
+        folders[folderName] = [];  // メモ用の空配列を追加
         saveData();
         renderFolders();
+    } else if (folders[folderName]) {
+        alert("既に同じ名前のフォルダが存在します。");
     }
 });
 
 // メモ追加
 newMemoBtn.addEventListener("click", () => {
     if (!currentFolder) {
-        alert("フォルダを選択してください！");
+        alert("メモを追加するフォルダを選択してください。");
         return;
     }
+
     const memoTitle = prompt("メモのタイトルを入力:");
     const memoContent = prompt("メモの内容を入力:");
+    
     if (memoTitle && memoContent) {
         folders[currentFolder].push({ title: memoTitle, content: memoContent });
         saveData();
@@ -58,6 +62,10 @@ function renderFolders() {
                 delete folders[folder];
                 saveData();
                 renderFolders();
+                if (currentFolder === folder) {
+                    currentFolder = newName;
+                    renderMemos();
+                }
             }
         };
 
@@ -70,7 +78,10 @@ function renderFolders() {
                 delete folders[folder];
                 saveData();
                 renderFolders();
-                memoList.innerHTML = "";
+                if (currentFolder === folder) {
+                    currentFolder = null;
+                    memoList.innerHTML = "";
+                }
             }
         };
 
@@ -84,13 +95,14 @@ function renderFolders() {
 // メモの表示
 function renderMemos() {
     memoList.innerHTML = "";
-    if (currentFolder) {
+    if (currentFolder && folders[currentFolder].length > 0) {
         folders[currentFolder].forEach((memo, index) => {
             const memoDiv = document.createElement("div");
             memoDiv.className = "memo-item";
 
             const memoTitleSpan = document.createElement("span");
             memoTitleSpan.textContent = memo.title;
+            memoTitleSpan.onclick = () => alert(`内容: ${memo.content}`);
 
             const editBtn = document.createElement("button");
             editBtn.className = "edit-btn";
@@ -121,6 +133,8 @@ function renderMemos() {
             memoDiv.appendChild(deleteBtn);
             memoList.appendChild(memoDiv);
         });
+    } else {
+        memoList.innerHTML = "<p>メモがありません。</p>";
     }
 }
 
