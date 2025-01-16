@@ -9,21 +9,19 @@ let folders = JSON.parse(localStorage.getItem('folders')) || {};
 let folderOrder = JSON.parse(localStorage.getItem('folderOrder')) || [];
 let currentFolder = null;
 
-// フォルダ追加（並び順も管理）
+// フォルダ追加
 newFolderBtn.addEventListener("click", () => {
     const folderName = prompt("新しいフォルダ名を入力:");
     if (folderName && !folders[folderName]) {
         folders[folderName] = [];
-        folderOrder.push(folderName);  // 並び順にも追加
+        folderOrder.push(folderName);
         currentFolder = folderName;
         saveData();
         renderFolders();
-    } else {
-        alert("既に存在するフォルダ名か、無効な名前です。");
     }
 });
 
-// メモ追加（見出し対応）
+// メモ追加
 newMemoBtn.addEventListener("click", () => {
     if (!currentFolder) {
         alert("フォルダを選択してください！");
@@ -38,80 +36,96 @@ newMemoBtn.addEventListener("click", () => {
     }
 });
 
-// フォルダの表示（ドラッグ＆ドロップ対応）
+// フォルダの表示
 function renderFolders() {
     folderList.innerHTML = "";
-    folderOrder.forEach((folder, index) => {
+    folderOrder.forEach((folder) => {
         const folderDiv = document.createElement("div");
-        folderDiv.textContent = folder;
         folderDiv.className = "folder-item";
-        folderDiv.dataset.index = index;
-        folderDiv.draggable = true;
-
+        folderDiv.textContent = folder;
         folderDiv.onclick = () => {
             currentFolder = folder;
             renderMemos();
         };
 
-        // ドラッグ開始
-        folderDiv.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('folderIndex', index);
-        });
+        const editBtn = document.createElement("button");
+        editBtn.innerHTML = "✏️";
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editFolderName(folder);
+        };
 
-        // ドラッグオーバー
-        folderDiv.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
-        // ドロップ処理
-        folderDiv.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const fromIndex = e.dataTransfer.getData('folderIndex');
-            const toIndex = e.target.dataset.index;
-            reorderFolders(fromIndex, toIndex);
-        });
-
+        folderDiv.appendChild(editBtn);
         folderList.appendChild(folderDiv);
     });
 }
 
-// フォルダの並べ替え
-function reorderFolders(fromIndex, toIndex) {
-    fromIndex = parseInt(fromIndex);
-    toIndex = parseInt(toIndex);
-
-    const movedFolder = folderOrder.splice(fromIndex, 1)[0];
-    folderOrder.splice(toIndex, 0, movedFolder);
-
-    saveData();
-    renderFolders();
+// フォルダ名の編集
+function editFolderName(folder) {
+    const newFolderName = prompt("フォルダ名を変更:", folder);
+    if (newFolderName && newFolderName !== folder) {
+        folders[newFolderName] = folders[folder];
+        delete folders[folder];
+        folderOrder[folderOrder.indexOf(folder)] = newFolderName;
+        saveData();
+        renderFolders();
+    }
 }
 
-// メモの表示（見出し付き）
+// メモの表示（ドラッグ＆ドロップ対応）
 function renderMemos() {
     memoList.innerHTML = "";
     if (currentFolder) {
         folders[currentFolder].forEach((memo, index) => {
             const memoDiv = document.createElement("div");
             memoDiv.className = "memo";
+            memoDiv.draggable = true;
+            memoDiv.dataset.index = index;
 
-            const headingDiv = document.createElement("h3");
+            const headingDiv = document.createElement("div");
             headingDiv.textContent = memo.heading;
-            headingDiv.onclick = () => editMemoHeading(index);
 
-            const contentDiv = document.createElement("p");
-            contentDiv.textContent = memo.content;
+            const editBtn = document.createElement("button");
+            editBtn.innerHTML = "✏️";
+            editBtn.onclick = () => editMemoHeading(index);
 
             const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "削除";
+            deleteBtn.innerHTML = "🗑️";
             deleteBtn.onclick = () => deleteMemo(index);
 
             memoDiv.appendChild(headingDiv);
-            memoDiv.appendChild(contentDiv);
+            memoDiv.appendChild(editBtn);
             memoDiv.appendChild(deleteBtn);
+
+            // ドラッグ処理
+            memoDiv.addEventListener("dragstart", (e) => {
+                e.dataTransfer.setData("memoIndex", index);
+            });
+
+            memoDiv.addEventListener("dragover", (e) => {
+                e.preventDefault();
+            });
+
+            memoDiv.addEventListener("drop", (e) => {
+                const fromIndex = e.dataTransfer.getData("memoIndex");
+                reorderMemos(fromIndex, index);
+            });
+
             memoList.appendChild(memoDiv);
         });
     }
+}
+
+// メモの並べ替え
+function reorderMemos(fromIndex, toIndex) {
+    fromIndex = parseInt(fromIndex);
+    toIndex = parseInt(toIndex);
+
+    const movedMemo = folders[currentFolder].splice(fromIndex, 1)[0];
+    folders[currentFolder].splice(toIndex, 0, movedMemo);
+
+    saveData();
+    renderMemos();
 }
 
 // メモの見出し編集
@@ -133,7 +147,7 @@ function deleteMemo(index) {
     }
 }
 
-// データ保存（フォルダ順序も保存）
+// データ保存
 function saveData() {
     localStorage.setItem('folders', JSON.stringify(folders));
     localStorage.setItem('folderOrder', JSON.stringify(folderOrder));
