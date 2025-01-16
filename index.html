@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prompt Dictionary</title>
     <link rel="manifest" href="/prompt-memo-app/manifest.json">
     <link rel="apple-touch-icon" href="/prompt-memo-app/icons/icon-192x192.svg">
@@ -83,7 +83,7 @@
             <!-- フォルダビューヘッダー -->
             <div class="p-4 border-b bg-white sticky top-0">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">フォルダ管理</h2>
+                    <h2 class="text-xl font-bold">フォルダ一覧</h2>
                     <button id="closeFolderView" 
                             class="text-gray-500 text-3xl hover:text-gray-700">&times;</button>
                 </div>
@@ -104,9 +104,10 @@
         </div>
     </div>
 
+    <!-- モーダル類 -->
     <!-- フォルダ編集モーダル -->
-    <div id="folderEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-30 p-4">
-        <div class="bg-white rounded-lg p-4 w-full max-w-sm">
+    <div id="folderEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-30">
+        <div class="bg-white rounded-lg p-4 w-full max-w-sm mx-4">
             <h3 class="text-lg font-bold mb-4">フォルダ名の編集</h3>
             <input type="text" id="editFolderName" 
                    class="w-full p-2 border rounded mb-4">
@@ -124,8 +125,8 @@
     </div>
 
     <!-- プロンプトタイトル編集モーダル -->
-    <div id="promptTitleEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-30 p-4">
-        <div class="bg-white rounded-lg p-4 w-full max-w-sm">
+    <div id="promptTitleEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-30">
+        <div class="bg-white rounded-lg p-4 w-full max-w-sm mx-4">
             <h3 class="text-lg font-bold mb-4">タイトルの編集</h3>
             <input type="text" id="editPromptTitle" 
                    class="w-full p-2 border rounded mb-4">
