@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Prompt Dictionary</title>
     <link rel="manifest" href="/prompt-memo-app/manifest.json">
     <link rel="apple-touch-icon" href="/prompt-memo-app/icons/icon-192x192.svg">
@@ -23,10 +23,6 @@
             -webkit-user-select: none;
             user-select: none;
         }
-        .folder-handle {
-            cursor: move;
-            cursor: -webkit-grab;
-        }
     </style>
 </head>
 <body class="bg-gray-100 safe-area">
@@ -35,14 +31,14 @@
         <header class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold">Prompt Dictionary</h1>
             <button id="showFolders" 
-                    class="bg-blue-500 text-white px-4 py-2 rounded">
-                フォルダ
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                フォルダ一覧
             </button>
         </header>
 
         <!-- 現在のフォルダ表示 -->
         <div class="mb-4 text-gray-600 bg-white p-4 rounded-lg shadow">
-            フォルダ: <span id="folderName" class="font-bold">未選択</span>
+            現在のフォルダ: <span id="folderName" class="font-bold">未選択</span>
         </div>
 
         <!-- プロンプト入力フォーム -->
@@ -56,11 +52,11 @@
                       rows="6"></textarea>
             <div class="flex justify-end gap-2">
                 <button id="copyButton" 
-                        class="bg-blue-500 text-white px-4 py-2 rounded">
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
                     コピー
                 </button>
                 <button id="saveButton" 
-                        class="bg-green-500 text-white px-4 py-2 rounded">
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
                     保存
                 </button>
             </div>
@@ -72,21 +68,22 @@
         </div>
     </div>
 
-    <!-- フォルダビュー -->
+    <!-- フォルダビュー（オーバーレイ） -->
     <div id="folderView" class="fixed inset-0 bg-white z-20 hidden">
         <div class="h-full flex flex-col">
             <!-- フォルダビューヘッダー -->
             <div class="p-4 border-b bg-white sticky top-0">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">フォルダ</h2>
-                    <button id="closeFolderView" class="text-gray-500 text-2xl">&times;</button>
+                    <h2 class="text-xl font-bold">フォルダ一覧</h2>
+                    <button id="closeFolderView" 
+                            class="text-gray-500 text-3xl hover:text-gray-700">&times;</button>
                 </div>
                 <div class="flex gap-2">
                     <input type="text" id="newFolderName" 
                            placeholder="新規フォルダ名" 
                            class="flex-1 p-2 border rounded">
                     <button id="addFolder" 
-                            class="bg-blue-500 text-white px-4 py-2 rounded">
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
                         作成
                     </button>
                 </div>
@@ -100,18 +97,18 @@
 
     <!-- モーダル類 -->
     <!-- フォルダ編集モーダル -->
-    <div id="folderEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-30">
-        <div class="bg-white rounded-lg p-4 w-80 mx-4">
+    <div id="folderEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-30 p-4">
+        <div class="bg-white rounded-lg p-4 w-full max-w-sm">
             <h3 class="text-lg font-bold mb-4">フォルダ名の編集</h3>
             <input type="text" id="editFolderName" 
                    class="w-full p-2 border rounded mb-4">
             <div class="flex justify-end gap-2">
                 <button id="cancelFolderEdit" 
-                        class="px-4 py-2 bg-gray-200 rounded">
+                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">
                     キャンセル
                 </button>
                 <button id="saveFolderEdit" 
-                        class="px-4 py-2 bg-blue-500 text-white rounded">
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded">
                     保存
                 </button>
             </div>
@@ -119,18 +116,18 @@
     </div>
 
     <!-- プロンプトタイトル編集モーダル -->
-    <div id="promptTitleEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-30">
-        <div class="bg-white rounded-lg p-4 w-80 mx-4">
+    <div id="promptTitleEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-30 p-4">
+        <div class="bg-white rounded-lg p-4 w-full max-w-sm">
             <h3 class="text-lg font-bold mb-4">タイトルの編集</h3>
             <input type="text" id="editPromptTitle" 
                    class="w-full p-2 border rounded mb-4">
             <div class="flex justify-end gap-2">
                 <button id="cancelPromptTitleEdit" 
-                        class="px-4 py-2 bg-gray-200 rounded">
+                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">
                     キャンセル
                 </button>
                 <button id="savePromptTitleEdit" 
-                        class="px-4 py-2 bg-blue-500 text-white rounded">
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded">
                     保存
                 </button>
             </div>
