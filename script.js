@@ -43,54 +43,23 @@ newMemoBtn.addEventListener("click", () => {
 function renderFolders() {
     folderList.innerHTML = "";
     for (let folder in folders) {
-        const folderWrapper = document.createElement("div");
-        folderWrapper.style.display = "inline-block";
-
         const folderBtn = document.createElement("button");
         folderBtn.textContent = folder;
-        folderBtn.className = "folderBtn";
-        if (folder === currentFolder) {
-            folderBtn.classList.add("selected");
-        }
-
+        folderBtn.className = folder === currentFolder ? "selected" : "";
         folderBtn.onclick = () => {
             currentFolder = folder;
             saveData();
             renderFolders();
             renderMemos();
         };
-
-        const deleteFolderBtn = document.createElement("button");
-        deleteFolderBtn.textContent = "削除";
-        deleteFolderBtn.className = "folderDeleteBtn";
-        deleteFolderBtn.onclick = (e) => {
-            e.stopPropagation();
-            deleteFolder(folder);
-        };
-
-        folderWrapper.appendChild(folderBtn);
-        folderWrapper.appendChild(deleteFolderBtn);
-        folderList.appendChild(folderWrapper);
-    }
-}
-
-// フォルダ削除
-function deleteFolder(folderName) {
-    if (confirm(`フォルダ「${folderName}」を削除しますか？`)) {
-        delete folders[folderName];
-        if (currentFolder === folderName) {
-            currentFolder = null;
-        }
-        saveData();
-        renderFolders();
-        renderMemos();
+        folderList.appendChild(folderBtn);
     }
 }
 
 // メモの表示
 function renderMemos() {
     memoList.innerHTML = "";
-    if (currentFolder) {
+    if (currentFolder && folders[currentFolder]) {
         folders[currentFolder].forEach((memo, index) => {
             const memoDiv = document.createElement("div");
             memoDiv.className = "memo";
