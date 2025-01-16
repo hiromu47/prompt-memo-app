@@ -169,7 +169,6 @@ class UIManager {
     }
 
     setupEventListeners() {
-        // フォルダビューの表示/非表示
         elements.showFolders.addEventListener('click', () => {
             elements.folderView.classList.remove('hidden');
         });
@@ -178,7 +177,6 @@ class UIManager {
             elements.folderView.classList.add('hidden');
         });
 
-        // フォルダの追加
         elements.addFolder.addEventListener('click', () => {
             const name = elements.newFolderName.value.trim();
             if (name) {
@@ -192,7 +190,6 @@ class UIManager {
             }
         });
 
-        // プロンプトの保存
         elements.saveButton.addEventListener('click', () => {
             if (!this.dataManager.currentFolder) {
                 this.showToast('フォルダを選択してください');
@@ -215,7 +212,6 @@ class UIManager {
             }
         });
 
-        // フォルダ編集モーダルの制御
         elements.saveFolderEdit.addEventListener('click', () => {
             const newName = elements.editFolderName.value.trim();
             if (newName) {
@@ -234,7 +230,6 @@ class UIManager {
             elements.folderEditModal.classList.add('hidden');
         });
 
-        // プロンプトタイトル編集モーダルの制御
         elements.savePromptTitleEdit.addEventListener('click', () => {
             const newTitle = elements.editPromptTitle.value.trim();
             if (newTitle) {
@@ -250,7 +245,6 @@ class UIManager {
             elements.promptTitleEditModal.classList.add('hidden');
         });
 
-        // コピーボタン
         elements.copyButton.addEventListener('click', () => {
             const content = elements.promptContent.value.trim();
             if (content) {
@@ -268,16 +262,16 @@ class UIManager {
                      data-folder="${folder}">
                     <div class="flex items-center flex-grow">
                         <span class="folder-handle mr-2 text-gray-400">⋮⋮</span>
-                        <span class="cursor-pointer" onclick="app.selectFolder('${folder}')">
+                        <button class="text-left flex-grow" onclick="app.selectFolder('${folder.replace(/'/g, "\\'")}'">
                             ${folder}
-                        </span>
+                        </button>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="app.showFolderEditModal('${folder}')"
+                        <button onclick="app.showFolderEditModal('${folder.replace(/'/g, "\\'")}')"
                                 class="text-blue-500">
                             編集
                         </button>
-                        <button onclick="app.deleteFolder('${folder}')"
+                        <button onclick="app.deleteFolder('${folder.replace(/'/g, "\\'")}')"
                                 class="text-red-500">
                             削除
                         </button>
