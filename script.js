@@ -1,4 +1,3 @@
-// データの読み込み
 document.addEventListener("DOMContentLoaded", loadData);
 
 const folderList = document.getElementById("folderList");
@@ -7,54 +6,85 @@ const newFolderBtn = document.getElementById("newFolderBtn");
 const newMemoBtn = document.getElementById("newMemoBtn");
 
 let folders = JSON.parse(localStorage.getItem('folders')) || {};
-let currentFolder = localStorage.getItem('currentFolder') || null;
+let currentFolder = null;
 
-// フォルダ追加（動作修正済み）
+// フォルダ追加
 newFolderBtn.addEventListener("click", () => {
     const folderName = prompt("新しいフォルダ名を入力:");
-    if (folderName && !folders[folderName]) {
+    if (folderName) {
         folders[folderName] = [];
-        currentFolder = folderName;
         saveData();
         renderFolders();
-        renderMemos();
-    } else if (folders[folderName]) {
-        alert("同じ名前のフォルダが既に存在します。");
     }
 });
 
-// メモ追加（動作修正済み）
+// フォルダ編集・削除
+function createFolderElement(folder) {
+    const folderDiv = document.createElement("div");
+    folderDiv.className = "folder";
+
+    const folderBtn = document.createElement("button");
+    folderBtn.textContent = folder;
+    folderBtn.onclick = () => {
+        currentFolder = folder;
+        renderMemos();
+    };
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "✏️";
+    editBtn.onclick = () => editFolderName(folder);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "🗑️";
+    deleteBtn.onclick = () => deleteFolder(folder);
+
+    folderDiv.appendChild(folderBtn);
+    folderDiv.appendChild(editBtn);
+    folderDiv.appendChild(deleteBtn);
+
+    return folderDiv;
+}
+
+function editFolderName(oldName) {
+    const newName = prompt("新しいフォルダ名を入力:", oldName);
+    if (newName && newName !== oldName) {
+        folders[newName] = folders[oldName];
+        delete folders[oldName];
+        saveData();
+        renderFolders();
+    }
+}
+
+function deleteFolder(folder) {
+    if (confirm(`${folder}を削除しますか？`)) {
+        delete folders[folder];
+        saveData();
+        renderFolders();
+    }
+}
+
+function renderFolders() {
+    folderList.innerHTML = "";
+    for (let folder in folders) {
+        folderList.appendChild(createFolderElement(folder));
+    }
+}
+
+// メモ追加（見出し対応）
 newMemoBtn.addEventListener("click", () => {
     if (!currentFolder) {
         alert("フォルダを選択してください！");
         return;
     }
-    const memoContent = prompt("メモ内容を入力:");
-    if (memoContent) {
-        folders[currentFolder].push({ content: memoContent, timestamp: new Date().toLocaleString() });
+    const heading = prompt("メモの見出しを入力:");
+    const content = prompt("メモの内容を入力:");
+    if (heading && content) {
+        folders[currentFolder].push({ heading, content });
         saveData();
         renderMemos();
     }
 });
 
-// フォルダの表示（修正済み）
-function renderFolders() {
-    folderList.innerHTML = "";
-    Object.keys(folders).forEach(folder => {
-        const folderBtn = document.createElement("button");
-        folderBtn.textContent = folder;
-        folderBtn.className = folder === currentFolder ? "selected" : "";
-        folderBtn.onclick = () => {
-            currentFolder = folder;
-            saveData();
-            renderFolders();
-            renderMemos();
-        };
-        folderList.appendChild(folderBtn);
-    });
-}
-
-// メモの表示（修正済み）
 function renderMemos() {
     memoList.innerHTML = "";
     if (currentFolder) {
@@ -62,32 +92,27 @@ function renderMemos() {
             const memoDiv = document.createElement("div");
             memoDiv.className = "memo";
 
-            const memoContent = document.createElement("p");
-            memoContent.textContent = memo.content;
+            const headingDiv = document.createElement("div");
+            headingDiv.className = "memo-heading";
+            headingDiv.textContent = memo.heading;
 
-            const memoTimestamp = document.createElement("small");
-            memoTimestamp.textContent = memo.timestamp;
-
-            const copyBtn = document.createElement("button");
-            copyBtn.className = "copyBtn";
-            copyBtn.textContent = "コピー";
-            copyBtn.onclick = () => copyToClipboard(memo.content);
+            const contentDiv = document.createElement("div");
+            contentDiv.textContent = memo.content;
 
             const deleteBtn = document.createElement("button");
-            deleteBtn.className = "deleteBtn";
+            deleteBtn.className = "action-btn";
             deleteBtn.textContent = "削除";
             deleteBtn.onclick = () => deleteMemo(index);
 
-            memoDiv.appendChild(memoContent);
-            memoDiv.appendChild(memoTimestamp);
-            memoDiv.appendChild(copyBtn);
+            memoDiv.appendChild(headingDiv);
+            memoDiv.appendChild(contentDiv);
             memoDiv.appendChild(deleteBtn);
+
             memoList.appendChild(memoDiv);
         });
     }
 }
 
-// メモ削除（修正済み）
 function deleteMemo(index) {
     if (confirm("本当に削除しますか？")) {
         folders[currentFolder].splice(index, 1);
@@ -96,16 +121,11 @@ function deleteMemo(index) {
     }
 }
 
-// データ保存（修正済み）
 function saveData() {
     localStorage.setItem('folders', JSON.stringify(folders));
-    localStorage.setItem('currentFolder', currentFolder);
 }
 
-// データ読み込み（修正済み）
 function loadData() {
     renderFolders();
-    if (currentFolder) {
-        renderMemos();
-    }
+    if (currentFolder) renderMemos();
 }
