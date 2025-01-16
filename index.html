@@ -3,17 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>プロンプトmemo</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>プロンプトメモ</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <div id="app">
-        <header>
-            <h1>プロンプトmemo</h1>
-            <button onclick="createFolder()">＋ フォルダ作成</button>
-        </header>
-        <div id="folder-list"></div>
-    </div>
+    <header>
+        <h1>プロンプトメモ</h1>
+        <button id="newFolderBtn">フォルダ追加</button>
+        <button id="newMemoBtn">メモ追加</button>
+    </header>
+
+    <main>
+        <div id="folderList"></div>
+        <div id="memoList"></div>
+    </main>
+
     <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
 </body>
 </html>
