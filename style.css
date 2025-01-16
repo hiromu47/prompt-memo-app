@@ -1,16 +1,23 @@
-/* UIデザイン */
-.folder-item, .memo {
+/* 基本デザイン */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #e0e0e0;
-    margin: 10px;
-    padding: 10px;
-    border-radius: 5px;
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
 }
 
 button {
-    padding: 5px 10px;
+    padding: 10px 15px;
+    margin-left: 10px;
     background-color: #2196F3;
     color: white;
     border: none;
@@ -20,4 +27,45 @@ button {
 
 button:hover {
     background-color: #0b7dda;
+}
+
+main {
+    display: flex;
+    padding: 20px;
+    gap: 20px;
+}
+
+#folderSection, #memoSection {
+    width: 45%;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.folder-item, .memo-item {
+    background-color: #e0e0e0;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+button.edit-btn, button.delete-btn {
+    background-color: #ff9800;
+    margin-left: 5px;
+}
+
+button.delete-btn {
+    background-color: #f44336;
+}
+
+button.edit-btn:hover {
+    background-color: #fb8c00;
+}
+
+button.delete-btn:hover {
+    background-color: #e53935;
 }
