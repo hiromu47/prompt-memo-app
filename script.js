@@ -44,24 +44,20 @@ class DataManager {
         this.editingPromptId = null;
     }
 
-    // データの読み込み
     loadData() {
         const saved = localStorage.getItem('promptDictionary');
         return saved ? JSON.parse(saved) : { folders: [], prompts: {} };
     }
 
-    // データの保存
     saveData() {
         localStorage.setItem('promptDictionary', JSON.stringify(this.data));
     }
 
-    // フォルダの並び順を更新
     reorderFolders(newOrder) {
         this.data.folders = newOrder;
         this.saveData();
     }
 
-    // フォルダの追加
     addFolder(name) {
         if (!this.data.folders.includes(name)) {
             this.data.folders.push(name);
@@ -72,7 +68,6 @@ class DataManager {
         return false;
     }
 
-    // フォルダの編集
     editFolder(oldName, newName) {
         if (oldName === newName) return true;
         if (this.data.folders.includes(newName)) return false;
@@ -91,7 +86,6 @@ class DataManager {
         return false;
     }
 
-    // フォルダの削除
     deleteFolder(name) {
         const index = this.data.folders.indexOf(name);
         if (index !== -1) {
@@ -106,7 +100,6 @@ class DataManager {
         return false;
     }
 
-    // プロンプトの保存
     savePrompt(title, content) {
         if (!this.currentFolder) return false;
 
@@ -122,7 +115,6 @@ class DataManager {
         return true;
     }
 
-    // プロンプトのタイトル編集
     editPromptTitle(promptId, newTitle) {
         if (!this.currentFolder) return false;
 
@@ -137,7 +129,6 @@ class DataManager {
         return false;
     }
 
-    // プロンプトの削除
     deletePrompt(id) {
         if (!this.currentFolder) return false;
 
@@ -147,10 +138,12 @@ class DataManager {
         return true;
     }
 
-    // フォルダの選択
     selectFolder(name) {
-        this.currentFolder = name;
-        return this.data.prompts[name] || [];
+        if (this.data.folders.includes(name)) {
+            this.currentFolder = name;
+            return this.data.prompts[name] || [];
+        }
+        return [];
     }
 }
 
@@ -163,11 +156,10 @@ class UIManager {
         this.renderFolders();
     }
 
-    // Sortableの設定
     setupSortable() {
         new Sortable(elements.folderList, {
             animation: 150,
-            handle: '.folder-drag-handle',
+            handle: '.folder-handle',
             onEnd: (evt) => {
                 const folders = Array.from(elements.folderList.children)
                     .map(el => el.getAttribute('data-folder'));
@@ -176,9 +168,8 @@ class UIManager {
         });
     }
 
-    // イベントリスナーの設定
     setupEventListeners() {
-        // 既存のイベントリスナー
+        // フォルダビューの表示/非表示
         elements.showFolders.addEventListener('click', () => {
             elements.folderView.classList.remove('hidden');
         });
@@ -187,6 +178,7 @@ class UIManager {
             elements.folderView.classList.add('hidden');
         });
 
+        // フォルダの追加
         elements.addFolder.addEventListener('click', () => {
             const name = elements.newFolderName.value.trim();
             if (name) {
@@ -197,6 +189,29 @@ class UIManager {
                 } else {
                     this.showToast('同名のフォルダが既に存在します');
                 }
+            }
+        });
+
+        // プロンプトの保存
+        elements.saveButton.addEventListener('click', () => {
+            if (!this.dataManager.currentFolder) {
+                this.showToast('フォルダを選択してください');
+                return;
+            }
+
+            const title = elements.promptTitle.value.trim();
+            const content = elements.promptContent.value.trim();
+
+            if (!title || !content) {
+                this.showToast('タイトルとプロンプト内容を入力してください');
+                return;
+            }
+
+            if (this.dataManager.savePrompt(title, content)) {
+                this.renderPrompts();
+                elements.promptTitle.value = '';
+                elements.promptContent.value = '';
+                this.showToast('保存しました');
             }
         });
 
@@ -235,29 +250,6 @@ class UIManager {
             elements.promptTitleEditModal.classList.add('hidden');
         });
 
-        // プロンプトの保存
-        elements.saveButton.addEventListener('click', () => {
-            if (!this.dataManager.currentFolder) {
-                this.showToast('フォルダを選択してください');
-                return;
-            }
-
-            const title = elements.promptTitle.value.trim();
-            const content = elements.promptContent.value.trim();
-
-            if (!title || !content) {
-                this.showToast('タイトルとプロンプト内容を入力してください');
-                return;
-            }
-
-            if (this.dataManager.savePrompt(title, content)) {
-                this.renderPrompts();
-                elements.promptTitle.value = '';
-                elements.promptContent.value = '';
-                this.showToast('保存しました');
-            }
-        });
-
         // コピーボタン
         elements.copyButton.addEventListener('click', () => {
             const content = elements.promptContent.value.trim();
@@ -269,14 +261,16 @@ class UIManager {
         });
     }
 
-    // フォルダ一覧の表示
     renderFolders() {
         elements.folderList.innerHTML = this.dataManager.data.folders
             .map(folder => `
-                <div class="folder-item flex justify-between items-center p-2 border-b" 
+                <div class="folder-item flex items-center justify-between p-4 border-b bg-white" 
                      data-folder="${folder}">
-                    <div class="folder-drag-handle flex items-center flex-grow cursor-move px-2">
-                        ⋮⋮ ${folder}
+                    <div class="flex items-center flex-grow">
+                        <span class="folder-handle mr-2 text-gray-400">⋮⋮</span>
+                        <span class="cursor-pointer" onclick="app.selectFolder('${folder}')">
+                            ${folder}
+                        </span>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="app.showFolderEditModal('${folder}')"
@@ -292,7 +286,6 @@ class UIManager {
             `).join('');
     }
 
-    // プロンプト一覧の表示
     renderPrompts() {
         if (!this.dataManager.currentFolder) {
             elements.promptList.innerHTML = '';
@@ -320,21 +313,18 @@ class UIManager {
             `).join('');
     }
 
-    // フォルダ編集モーダルの表示
     showFolderEditModal(folderName) {
         this.dataManager.editingFolder = folderName;
         elements.editFolderName.value = folderName;
         elements.folderEditModal.classList.remove('hidden');
     }
 
-    // プロンプトタイトル編集モーダルの表示
     showPromptTitleEditModal(promptId, currentTitle) {
         this.dataManager.editingPromptId = promptId;
         elements.editPromptTitle.value = currentTitle;
         elements.promptTitleEditModal.classList.remove('hidden');
     }
 
-    // フォルダの削除
     deleteFolder(name) {
         if (confirm(`フォルダ「${name}」を削除してもよろしいですか？\n中のプロンプトも全て削除されます。`)) {
             if (this.dataManager.deleteFolder(name)) {
@@ -346,7 +336,6 @@ class UIManager {
         }
     }
 
-    // フォルダの選択
     selectFolder(name) {
         this.dataManager.selectFolder(name);
         this.updateCurrentFolderDisplay();
@@ -354,13 +343,11 @@ class UIManager {
         this.renderPrompts();
     }
 
-    // 現在のフォルダ表示の更新
     updateCurrentFolderDisplay() {
         elements.currentFolder.textContent = 
             this.dataManager.currentFolder || '未選択';
     }
 
-    // プロンプトの削除
     deletePrompt(id) {
         if (confirm('このプロンプトを削除しますか？')) {
             if (this.dataManager.deletePrompt(id)) {
@@ -370,7 +357,6 @@ class UIManager {
         }
     }
 
-    // プロンプトのコピー
     copyPromptToClipboard(id) {
         const prompts = this.dataManager.data.prompts[this.dataManager.currentFolder];
         const prompt = prompts.find(p => p.id === id);
@@ -381,7 +367,6 @@ class UIManager {
         }
     }
 
-    // トースト通知の表示
     showToast(message) {
         const toast = document.createElement('div');
         toast.className = 
