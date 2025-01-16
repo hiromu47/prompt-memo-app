@@ -8,10 +8,6 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.folder-item.dragging {
-    opacity: 0.5;
-}
-
-.folder-item.drag-over {
-    border: 2px dashed #4CAF50;
+.folder-item:active {
+    cursor: grabbing;
 }
